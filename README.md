@@ -355,13 +355,6 @@ export DATABASE_URL="postgresql://..."
 # Configure all API keys
 ```
 
-## 📞 Support
-
-For support and questions:
-- Documentation: [Internal Wiki]
-- Issues: [GitHub Issues]
-- Email: support@seoautomation.com
-
 ## 📄 License
 
 This project is proprietary software. All rights reserved.
