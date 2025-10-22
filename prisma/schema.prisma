@@ -1,0 +1,174 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String     @id @default(cuid())
+  email     String     @unique
+  password  String
+  name      String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  clients   Client[]
+  automations Automation[]
+}
+
+model Client {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name      String
+  website   String
+  description String?
+  
+  // WordPress Integration
+  wordpressUrl String?
+  wordpressApiKey String?
+  
+  // Google Business Profile
+  gbpBusinessId String?
+  gbpAccessToken String?
+  
+  // SEMrush Integration
+  semrushApiKey String?
+  
+  // GA4 Integration
+  ga4PropertyId String?
+  ga4AccessToken String?
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  uploads Automation[]
+  posts   BlogPost[]
+  keywords Keyword[]
+  analytics Analytics[]
+
+  @@index([userId])
+}
+
+model Automation {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  // Upload metadata
+  title     String
+  description String?
+  uploadType String // "photo", "testimonial", "project_notes"
+  
+  // Generated content
+  generatedContent String? // JSON stringified content
+  status    String     @default("pending") // pending, processing, completed, failed
+  
+  // WordPress post
+  wordpressPostId String?
+  wordpressPostUrl String?
+  
+  // GBP post
+  gbpPostId String?
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([clientId])
+}
+
+model BlogPost {
+  id        String     @id @default(cuid())
+  clientId  String
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  title     String
+  metaDescription String?
+  content   String
+  schemaJson String? // JSON-LD schema
+  
+  service   String?
+  location  String?
+  
+  wordpressPostId String? @unique
+  wordpressUrl String?
+  
+  publishedAt DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([clientId])
+}
+
+model Keyword {
+  id        String     @id @default(cuid())
+  clientId  String
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  keyword   String
+  service   String?
+  location  String?
+  
+  currentRank Int?
+  previousRank Int?
+  searchVolume Int?
+  difficulty Int?
+  
+  lastCheckedAt DateTime?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([clientId])
+  @@unique([clientId, keyword])
+}
+
+model Analytics {
+  id        String     @id @default(cuid())
+  clientId  String
+  client    Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  
+  date      DateTime
+  
+  // GA4 metrics
+  sessions  Int?
+  users     Int?
+  pageViews Int?
+  bounceRate Float?
+  avgSessionDuration Float?
+  conversions Int?
+  
+  // SEMrush metrics
+  organicTraffic Int?
+  keywordRankings Int?
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([clientId])
+  @@unique([clientId, date])
+}
+
+model ApiKey {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  service   String // "openai", "semrush", "ga4", etc.
+  key       String
+  
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([userId])
+  @@unique([userId, service])
+}

@@ -1,0 +1,254 @@
+# SEO Automation Workflow Configuration
+# This file defines the automation settings for all clients
+
+version: "1.0"
+description: "AI-Powered SEO Automation System Configuration"
+
+# Global settings
+global:
+  openai_model: "gpt-4-turbo"
+  semrush_database: "us"
+  ga4_days_history: 30
+  reoptimization_threshold: 5  # positions drop before triggering re-optimization
+  monthly_report_day: 1  # First day of month
+  ranking_check_hour: 9  # 9 AM daily
+
+# Client configurations
+clients:
+  client_001:
+    name: "ABC Construction"
+    website: "https://abcconstruction.com"
+    industry: "construction"
+    location: "Springfield, IL"
+
+    # WordPress Integration
+    wordpress_url: "https://abcconstruction.com"
+    wordpress_api_key: "wp_demo_key_123"
+
+    # Google Business Profile
+    gbp_business_id: "12345678901234567890"
+    gbp_access_token: "gbp_demo_token_456"
+
+    # SEMrush Integration
+    semrush_api_key: "${SEMRUSH_API_KEY_CLIENT_001}"
+
+    # Google Analytics 4
+    ga4_property_id: "123456789"
+    ga4_access_token: "ga4_demo_token_012"
+
+    # OpenAI (can be global or client-specific)
+    openai_api_key: "${OPENAI_API_KEY}"
+
+    # Looker Studio
+    looker_studio_report_id: "looker_report_001"
+
+    # Automation settings
+    automation:
+      content_types: ["photo", "testimonial", "project_notes"]
+      auto_publish_wordpress: true
+      auto_publish_gbp: true
+      auto_reoptimize: true
+      monthly_reports: true
+
+  client_002:
+    name: "XYZ Plumbing Services"
+    website: "https://xyzplumbing.com"
+    industry: "plumbing"
+    location: "Austin, TX"
+
+    wordpress_url: "https://xyzplumbing.com"
+    wordpress_api_key: "${WORDPRESS_API_KEY_CLIENT_002}"
+
+    gbp_business_id: "09876543210987654321"
+    gbp_access_token: "${GBP_ACCESS_TOKEN_CLIENT_002}"
+
+    semrush_api_key: "${SEMRUSH_API_KEY_CLIENT_002}"
+    ga4_property_id: "987654321"
+    ga4_access_token: "${GA4_ACCESS_TOKEN_CLIENT_002}"
+
+    openai_api_key: "${OPENAI_API_KEY}"
+    looker_studio_report_id: "looker_report_002"
+
+    automation:
+      content_types: ["photo", "testimonial", "project_notes"]
+      auto_publish_wordpress: true
+      auto_publish_gbp: true
+      auto_reoptimize: true
+      monthly_reports: true
+
+# API endpoints and settings
+apis:
+  wordpress:
+    base_url_template: "{wordpress_url}/wp-json/wp/v2"
+    auth_header: "Bearer {api_key}"
+    post_status: "publish"
+    media_upload: true
+
+  google_business_profile:
+    base_url: "https://mybusiness.googleapis.com/v4"
+    auth_header: "Bearer {access_token}"
+    post_summary_limit: 1500
+    auto_hashtags: true
+
+  semrush:
+    base_url: "https://api.semrush.com"
+    export_columns: "Ph,Po,Nq,Kd,Cp"
+    database: "us"
+
+  google_analytics_4:
+    base_url: "https://analyticsdata.googleapis.com/v1beta"
+    auth_header: "Bearer {access_token}"
+    metrics:
+      - sessions
+      - totalUsers
+      - screenPageViews
+      - bounceRate
+      - averageSessionDuration
+      - conversions
+      - organicGoogleSearchClicks
+
+  openai:
+    base_url: "https://api.openai.com/v1"
+    model: "gpt-4-turbo"
+    temperature: 0.7
+    max_tokens: 2500
+
+# Automation workflows
+workflows:
+  content_creation:
+    steps:
+      - name: "generate_content"
+        type: "openai_completion"
+        input: ["upload_type", "description", "service", "location"]
+        output: ["title", "content", "meta_description", "schema_json", "hashtags"]
+
+      - name: "publish_wordpress"
+        type: "wordpress_post"
+        condition: "auto_publish_wordpress"
+        input: ["title", "content", "meta_description", "schema_json"]
+        output: ["wordpress_post_id", "wordpress_url"]
+
+      - name: "publish_gbp"
+        type: "gbp_post"
+        condition: "auto_publish_gbp"
+        input: ["meta_description", "hashtags", "wordpress_url"]
+        output: ["gbp_post_id"]
+
+      - name: "store_results"
+        type: "database_save"
+        input: ["all_previous_outputs"]
+
+  ranking_monitoring:
+    schedule: "daily"
+    steps:
+      - name: "fetch_rankings"
+        type: "semrush_domain_organic"
+        input: ["domain"]
+        output: ["keyword_rankings"]
+
+      - name: "check_thresholds"
+        type: "ranking_analysis"
+        input: ["keyword_rankings", "previous_rankings"]
+        output: ["ranking_changes", "reoptimization_triggers"]
+
+      - name: "trigger_reoptimization"
+        type: "content_reoptimization"
+        condition: "ranking_changes.significant_drop"
+        input: ["ranking_changes"]
+        output: ["reoptimized_content"]
+
+  monthly_reporting:
+    schedule: "monthly"
+    steps:
+      - name: "gather_analytics"
+        type: "multi_api_fetch"
+        apis: ["ga4", "semrush", "gbp"]
+        input: ["date_range"]
+        output: ["analytics_data"]
+
+      - name: "generate_report"
+        type: "report_builder"
+        input: ["analytics_data", "content_performance"]
+        output: ["monthly_report"]
+
+      - name: "update_dashboard"
+        type: "looker_studio_update"
+        input: ["monthly_report"]
+        output: ["dashboard_updated"]
+
+      - name: "send_notifications"
+        type: "email_notification"
+        input: ["monthly_report", "client_contacts"]
+        output: ["notification_sent"]
+
+# Error handling and retries
+error_handling:
+  max_retries: 3
+  retry_delay_seconds: 60
+  failure_notifications:
+    email: "admin@seoautomation.com"
+    slack_webhook: "${SLACK_WEBHOOK_URL}"
+
+  api_error_codes:
+    wordpress:
+      401: "Invalid API key"
+      403: "Insufficient permissions"
+      500: "WordPress server error"
+
+    gbp:
+      401: "Invalid access token"
+      403: "Insufficient GBP permissions"
+      429: "Rate limit exceeded"
+
+    semrush:
+      400: "Invalid request parameters"
+      401: "Invalid API key"
+      402: "Insufficient credits"
+
+# Monitoring and logging
+monitoring:
+  log_level: "INFO"
+  log_file: "logs/automation.log"
+  metrics_collection: true
+  performance_tracking: true
+
+  alerts:
+    ranking_drop_threshold: 5
+    api_failure_threshold: 3
+    content_generation_failure: true
+
+# Database configuration (if using external database)
+database:
+  type: "sqlite"  # or "postgresql", "mysql"
+  connection_string: "${DATABASE_URL}"
+  migrations_path: "prisma/migrations"
+
+# Notification settings
+notifications:
+  email:
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: "${EMAIL_USERNAME}"
+    password: "${EMAIL_PASSWORD}"
+    from_address: "noreply@seoautomation.com"
+
+  slack:
+    webhook_url: "${SLACK_WEBHOOK_URL}"
+    channel: "#seo-automation"
+    username: "SEO Bot"
+
+# Security settings
+security:
+  api_key_rotation_days: 90
+  log_sensitive_data: false
+  rate_limiting:
+    requests_per_minute: 60
+    burst_limit: 100
+
+# Backup and recovery
+backup:
+  schedule: "daily"
+  retention_days: 30
+  storage: "s3"
+  bucket: "seo-automation-backups"
+  encryption: true
