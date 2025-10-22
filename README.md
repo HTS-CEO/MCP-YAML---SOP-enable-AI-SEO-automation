@@ -55,7 +55,7 @@ A comprehensive SEO automation platform that connects WordPress, Google Business
 
 ### 1. Clone and Install
 ```bash
-git clone <repository-url>
+git clone https://github.com/HTS-CEO/MCP-YAML---SOP-enable-AI-SEO-automation
 cd seo-dashboard
 npm install
 pip install -r requirements.txt
